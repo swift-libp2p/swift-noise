@@ -2,6 +2,7 @@
 
 [![](https://img.shields.io/badge/made%20by-Breth-blue.svg?style=flat-square)](https://breth.app)
 [![Swift Package Manager compatible](https://img.shields.io/badge/SPM-compatible-blue.svg?style=flat-square)](https://github.com/apple/swift-package-manager)
+![Build & Test (macos and linux)](https://github.com/swift-libp2p/swift-noise/actions/workflows/build+test.yml/badge.svg)
 
 > A swift implementation of the [Noise Protocol Framework](https://noiseprotocol.org/noise.html). 
 
