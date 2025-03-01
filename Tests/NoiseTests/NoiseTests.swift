@@ -2212,7 +2212,9 @@ struct NoiseTestSuite {
             }
         }).map { String($0) }.dropLast(2)
         var payloads: [Int: String] = [:]
-        plStr.enumerated().forEach { payloads[$0.offset] = $0.element }
+        for (idx, p) in plStr.enumerated() {
+            payloads[idx] = p
+        }
 
         print(
             "Running Test Vector \(i) -> \(handshake)\(prologue.count > 0 ? " - Prologue" : "")\(payloads.count > 0 ? " - Payloads" : "")"
