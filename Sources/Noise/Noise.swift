@@ -673,7 +673,7 @@ public struct Noise {
 
         public init(config: Config) throws {
             /// Sets message_patterns to the message patterns from handshake_pattern.
-            self.messagePattern = config.handshakePattern.messagePattern  //Array(handshake.messagePattern.map { $0.messages }.joined())
+            self.messagePattern = config.handshakePattern.messagePattern
             self.prologue = config.prologue
 
             /// Sets the initiator, s, e, rs, and re variables to the corresponding arguments.
