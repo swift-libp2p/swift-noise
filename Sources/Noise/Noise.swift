@@ -28,7 +28,7 @@ public struct Noise {
     static let MaxMsgLen = 65_535
 
     /// Noise defined Message types
-    public enum Message {
+    public enum Message: Sendable {
         case s
         case e
         case ee
@@ -38,7 +38,7 @@ public struct Noise {
         case psk
     }
 
-    public enum MessagePattern {
+    public enum MessagePattern: Sendable {
         case inbound([Message])
         case outbound([Message])
 
@@ -191,8 +191,8 @@ public struct Noise {
     }
 
     /// A set of pre-configured / defined Noise Handshake message patterns
-    public struct Handshakes {
-        public struct Handshake {
+    public struct Handshakes: Sendable {
+        public struct Handshake: Sendable {
             let name: String
             let messagePattern: [MessagePattern]
             let initiatorPreMessages: [Message]
