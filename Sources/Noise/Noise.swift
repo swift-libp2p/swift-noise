@@ -1493,5 +1493,7 @@ extension UInt64: UIntToBytesConvertable {
 }
 
 #if swift(<6.1)
-extension SymmetricKey: @unchecked Sendable {}
+extension SymmetricKey: @retroactive @unchecked Sendable {}
+extension Curve25519.KeyAgreement.PublicKey: @retroactive @unchecked Sendable {}
+extension Curve25519.KeyAgreement.PrivateKey: @retroactive @unchecked Sendable {}
 #endif
