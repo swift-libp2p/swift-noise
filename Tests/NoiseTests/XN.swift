@@ -12,7 +12,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-import Crypto
 import Testing
 
 @testable import Noise
