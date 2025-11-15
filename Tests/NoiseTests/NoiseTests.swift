@@ -99,43 +99,24 @@ final class noiseTests: XCTestCase {
     }
 
     /// These test params come from the [js-libp2p-noise test suite](https://github.com/NodeFactoryIo/js-libp2p-noise/blob/f9d56d8c87635ec03b6d7aa50e594b57923f41df/test/handshakes/xx.spec.ts)
-    //    func testHMACChaining2_HKDF() throws {
-    //        let ckBytes = try BaseEncoding.decode("4e6f6973655f58585f32353531395f58436861436861506f6c795f53484132353600000000000000000000000000000000000000000000000000000000000000", as: .base16)
-    //        let chainingKey = SymmetricKey(data: ckBytes.data.prefix(32))
-    //        let ikm = try BaseEncoding.decode("a3eae50ea37a47e8a7aa0c7cd8e16528670536dcd538cebfd724fb68ce44f1910ad898860666227d4e8dd50d22a9a64d1c0a6f47ace092510161e9e442953da3", as: .base16)
-    //
-    //        let keys = try HKDF(chainingKey: chainingKey, inputKeyMaterial: ikm.data, numOutputs: 3)
-    //
-    //        XCTAssertEqual(keys.0.asString(base: .base16), "cc5659adff12714982f806e2477a8d5ddd071def4c29bb38777b7e37046f6914")
-    //        XCTAssertEqual(keys.1.asString(base: .base16), "a16ada915e551ab623f38be674bb4ef15d428ae9d80688899c9ef9b62ef208fa")
-    //        XCTAssertEqual(keys.2!.asString(base: .base16), "ff67bf9727e31b06efc203907e6786667d2c7a74ac412b4d31a80ba3fd766f68")
-    //    }
+    func testHMACChaining2_HKDF() throws {
+        let ckBytes = Array(
+            hex:
+                "4e6f6973655f58585f32353531395f58436861436861506f6c795f53484132353600000000000000000000000000000000000000000000000000000000000000"
+        )
+        let chainingKey = SymmetricKey(data: Data(ckBytes.prefix(32)))
+        let ikm = Array(
+            hex:
+                "a3eae50ea37a47e8a7aa0c7cd8e16528670536dcd538cebfd724fb68ce44f1910ad898860666227d4e8dd50d22a9a64d1c0a6f47ace092510161e9e442953da3"
+        )
 
-    //    private func HKDF(chainingKey:SymmetricKey, inputKeyMaterial:Data, numOutputs:Int) throws -> (Data, Data, Data?) {
-    //        guard chainingKey.bitCount == 256 else { throw NSError(domain: "ChainingKey is expected to be 32 Bytes in length", code: 0, userInfo: nil) }
-    //        guard numOutputs == 2 || numOutputs == 3 else { throw NSError(domain: "Invalid numOutputs specified. numOutputs must either be 2 or 3", code: 0, userInfo: nil) }
-    //        var hmac = HMAC<SHA256>(key: chainingKey)
-    //        hmac.update(data: inputKeyMaterial)
-    //        let tempKey = SymmetricKey(data: Data(hmac.finalize()))
-    //
-    //        var hmac1 = HMAC<SHA256>(key: tempKey)
-    //        hmac1.update(data: Data([0x01]))
-    //        let output1 = Data(hmac1.finalize())
-    //
-    //        var hmac2 = HMAC<SHA256>(key: tempKey)
-    //        hmac2.update(data: output1 + Data([0x02]))
-    //        let output2 = Data(hmac2.finalize())
-    //
-    //        if numOutputs == 2 {
-    //            return (output1, output2, nil)
-    //        }
-    //
-    //        var hmac3 = HMAC<SHA256>(key: tempKey)
-    //        hmac3.update(data: output2 + Data([0x03]))
-    //        let output3 = Data(hmac3.finalize())
-    //
-    //        return (output1, output2, output3)
-    //    }
+        let hf = Noise.NoiseHashFunction.sha256
+        let keys = try hf.HKDF(chainingKey: chainingKey, inputKeyMaterial: Array(ikm), numOutputs: 3)
+
+        XCTAssertEqual(keys.0.toHexString(), "cc5659adff12714982f806e2477a8d5ddd071def4c29bb38777b7e37046f6914")
+        XCTAssertEqual(keys.1.toHexString(), "a16ada915e551ab623f38be674bb4ef15d428ae9d80688899c9ef9b62ef208fa")
+        XCTAssertEqual(keys.2!.toHexString(), "ff67bf9727e31b06efc203907e6786667d2c7a74ac412b4d31a80ba3fd766f68")
+    }
 
     /// The Noise_XX_25519_ChaChaPoly_SHA256 test vector
     /// ```
