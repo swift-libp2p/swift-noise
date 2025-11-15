@@ -14,7 +14,8 @@
 //
 //  A Noise Protocol handshake implementation
 
-import Crypto
+// TODO: remove this once we drop support for swift 6.0
+@preconcurrency import Crypto
 
 internal protocol Handshake {
     var isInitiator: Bool { get }
