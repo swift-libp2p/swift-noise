@@ -14,7 +14,7 @@
 //
 //  A Noise Protocol handshake implementation
 
-// TODO: remove this once we drop support for swift 6.0
+// TODO: remove the @preconcurrency tag once we drop support for swift 6.0
 @preconcurrency import Crypto
 
 internal protocol Handshake {
