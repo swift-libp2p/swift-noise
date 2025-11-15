@@ -1491,3 +1491,7 @@ extension UInt64: UIntToBytesConvertable {
         toByteArr(endian: self.bigEndian, count: MemoryLayout<UInt64>.size)
     }
 }
+
+#if swift(<6.1)
+extension SymmetricKey: @unchecked Sendable {}
+#endif
