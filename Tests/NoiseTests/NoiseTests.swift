@@ -54,6 +54,7 @@ final class noiseTests: XCTestCase {
 
         let inputKeyMaterial: Data = Data()
 
+        // Here we're testing HMAC Chaining with a fresh HMAC for every expansion
         var hmac = HMAC<SHA256>(key: chainingKey)
         hmac.update(data: inputKeyMaterial)
         let tempKey = SymmetricKey(data: Data(hmac.finalize()))
@@ -66,7 +67,7 @@ final class noiseTests: XCTestCase {
         hmac2.update(data: output1 + Data([0x02]))
         let output2 = Data(hmac2.finalize())
 
-        // As long as the data being hashed and the key thats signing is the same, the output should stay the same.
+        // As long as the data being hashed and the key that's signing is the same, the output should stay the same.
         var hmac2Same = HMAC<SHA256>(key: tempKey)
         hmac2Same.update(data: output1 + Data([0x02]))
         let output2Same = Data(hmac2Same.finalize())
@@ -75,32 +76,26 @@ final class noiseTests: XCTestCase {
         hmac3.update(data: output2 + Data([0x03]))
         let output3 = Data(hmac3.finalize())
 
-        //print(output1. .asString(base: .base16))
-        //print(output2.asString(base: .base16))
-        //print(output2Same.asString(base: .base16))
-        //print(output3.asString(base: .base16))
-
-        // As long as the data being hashed and the key thats signing the data is the same, the output should stay the same.
+        // As long as the data being hashed and the key that's signing the data is the same, the output should stay the same.
         XCTAssertEqual(output2, output2Same)
 
-        // Calling update multiple times on a single HMAC is not the same as instantiating a new HMAC for each expansion...
-        //        var hmac1U = HMAC<SHA256>(key: tempKey)
-        //        hmac1U.update(data: Data([0x01]))
-        //        let output1U = Data(hmac1U.finalize())
-        //
-        //        hmac1U.update(data: Data([0x02]))
-        //        let output2U = Data(hmac1U.finalize())
-        //
-        //        hmac1U.update(data: Data([0x03]))
-        //        let output3U = Data(hmac1U.finalize())
-        //
-        //        XCTAssertEqual(output1U, output1)
-        //        XCTAssertEqual(output2U, output2)
-        //        XCTAssertEqual(output3U, output3)
-        //
-        //        print(output1U.asString(base: .base16))
-        //        print(output2U.asString(base: .base16))
-        //        print(output3U.asString(base: .base16))
+        // Here we're testing HMAC Chaining with a singular HMAC instance
+        // Calling update multiple times on a single HMAC instantiation is NOT the same as instantiating a new HMAC for each expansion...
+        var hmac1U = HMAC<SHA256>(key: tempKey)
+        hmac1U.update(data: Data([0x01]))
+        let output1U = Data(hmac1U.finalize())
+
+        hmac1U.update(data: output1U + Data([0x02]))
+        let output2U = Data(hmac1U.finalize())
+
+        hmac1U.update(data: output2U + Data([0x03]))
+        let output3U = Data(hmac1U.finalize())
+
+        // The first pass is equal
+        XCTAssertEqual(output1U, output1)
+        // The following passes are NOT equal
+        XCTAssertNotEqual(output2U, output2)
+        XCTAssertNotEqual(output3U, output3)
     }
 
     /// These test params come from the [js-libp2p-noise test suite](https://github.com/NodeFactoryIo/js-libp2p-noise/blob/f9d56d8c87635ec03b6d7aa50e594b57923f41df/test/handshakes/xx.spec.ts)
