@@ -559,7 +559,7 @@ public struct Noise {
         }
     }
 
-    public enum NoiseKeypairCurve {
+    public enum NoiseKeypairCurve: Sendable {
         case ed25519
 
         internal var protocolName: String {
@@ -570,7 +570,7 @@ public struct Noise {
         }
     }
 
-    public struct CipherSuite {
+    public struct CipherSuite: Sendable {
         let keyCurve: NoiseKeypairCurve
         let cipher: NoiseCipherAlgorithm
         let hashFunction: NoiseHashFunction
@@ -586,7 +586,7 @@ public struct Noise {
         }
     }
 
-    public struct Config {
+    public struct Config: Sendable {
         let cipherSuite: CipherSuite
         let handshakePattern: Handshakes.Handshake
         let initiator: Bool
@@ -638,7 +638,7 @@ public struct Noise {
         }
     }
 
-    public enum Errors: Error {
+    public enum Errors: Error, Sendable {
         case invalidPSK
         case remoteEphemeralKeyAlreadySet
         case remoteStaticKeyAlreadySet
