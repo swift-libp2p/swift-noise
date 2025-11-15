@@ -15,6 +15,7 @@
 //  A Noise Protocol handshake implementation
 
 import Crypto
+import NIOConcurrencyHelpers
 
 internal protocol Handshake {
     var isInitiator: Bool { get }
@@ -28,7 +29,7 @@ public struct Noise {
     static let MaxMsgLen = 65_535
 
     /// Noise defined Message types
-    public enum Message {
+    public enum Message: Sendable {
         case s
         case e
         case ee
@@ -38,7 +39,7 @@ public struct Noise {
         case psk
     }
 
-    public enum MessagePattern {
+    public enum MessagePattern: Sendable {
         case inbound([Message])
         case outbound([Message])
 
@@ -191,8 +192,8 @@ public struct Noise {
     }
 
     /// A set of pre-configured / defined Noise Handshake message patterns
-    public struct Handshakes {
-        public struct Handshake {
+    public struct Handshakes: Sendable {
+        public struct Handshake: Sendable {
             let name: String
             let messagePattern: [MessagePattern]
             let initiatorPreMessages: [Message]
@@ -356,7 +357,7 @@ public struct Noise {
 
     }
 
-    public enum NoiseHashFunction {
+    public enum NoiseHashFunction: Sendable {
         case sha256
         //case sha384
         case sha512
@@ -466,7 +467,7 @@ public struct Noise {
         }
     }
 
-    public enum NoiseCipherAlgorithm {
+    public enum NoiseCipherAlgorithm: Sendable {
         case ChaChaPoly1305
         case AESGCM
 
@@ -558,7 +559,7 @@ public struct Noise {
         }
     }
 
-    public enum NoiseKeypairCurve {
+    public enum NoiseKeypairCurve: Sendable {
         case ed25519
 
         internal var protocolName: String {
@@ -569,7 +570,7 @@ public struct Noise {
         }
     }
 
-    public struct CipherSuite {
+    public struct CipherSuite: Sendable {
         let keyCurve: NoiseKeypairCurve
         let cipher: NoiseCipherAlgorithm
         let hashFunction: NoiseHashFunction
@@ -585,7 +586,7 @@ public struct Noise {
         }
     }
 
-    public struct Config {
+    public struct Config: Sendable {
         let cipherSuite: CipherSuite
         let handshakePattern: Handshakes.Handshake
         let initiator: Bool
@@ -637,7 +638,7 @@ public struct Noise {
         }
     }
 
-    public enum Errors: Error {
+    public enum Errors: Error, Sendable {
         case invalidPSK
         case remoteEphemeralKeyAlreadySet
         case remoteStaticKeyAlreadySet
@@ -651,65 +652,99 @@ public struct Noise {
 
     /// A HandshakeState object contains a `SymmetricState` plus DH variables (`s`, `e`, `rs`, `re`) and a variable representing the handshake pattern.
     /// - Note: During the handshake phase each party has a single HandshakeState, which can be deleted once the handshake is finished.
-    public class HandshakeState {
+    public final class HandshakeState: Sendable {
         private let symmetricState: SymmetricState
 
-        private var s: Curve25519.KeyAgreement.PrivateKey?  //Our Local Libp2p Keys
-        private var e: Curve25519.KeyAgreement.PrivateKey?  //Our Local Noise Ephemeral Keys
-        private var rs: Curve25519.KeyAgreement.PublicKey?  //Remote Peer Libp2p Public Key
-        private var re: Curve25519.KeyAgreement.PublicKey?  //Remote Peer Noise Ephemeral PubKey
-        private var psk: [UInt8] = []
+        private var s: Curve25519.KeyAgreement.PrivateKey? {
+            get { _s.withLockedValue { $0 } }
+            set { _s.withLockedValue { $0 = newValue } }
+        }
+        private let _s: NIOLockedValueBox<Curve25519.KeyAgreement.PrivateKey?>  //Our Local Libp2p Keys
+
+        private var e: Curve25519.KeyAgreement.PrivateKey? {
+            get { _e.withLockedValue { $0 } }
+            set { _e.withLockedValue { $0 = newValue } }
+        }
+        private let _e: NIOLockedValueBox<Curve25519.KeyAgreement.PrivateKey?>  //Our Local Noise Ephemeral Keys
+
+        private var rs: Curve25519.KeyAgreement.PublicKey? {
+            get { _rs.withLockedValue { $0 } }
+            set { _rs.withLockedValue { $0 = newValue } }
+        }
+        private let _rs: NIOLockedValueBox<Curve25519.KeyAgreement.PublicKey?>  //Remote Peer Libp2p Public Key
+
+        private var re: Curve25519.KeyAgreement.PublicKey? {
+            get { _re.withLockedValue { $0 } }
+            set { _re.withLockedValue { $0 = newValue } }
+        }
+        private let _re: NIOLockedValueBox<Curve25519.KeyAgreement.PublicKey?>  //Remote Peer Noise Ephemeral PubKey
+
+        private var psk: [UInt8] {
+            get { _psk.withLockedValue { $0 } }
+            set { _psk.withLockedValue { $0 = newValue } }
+        }
+        private let _psk: NIOLockedValueBox<[UInt8]>
 
         let initiator: Bool
-        private var messagePattern: [MessagePattern]
+
+        private var messagePattern: [MessagePattern] {
+            get { _messagePattern.withLockedValue { $0 } }
+            set { _messagePattern.withLockedValue { $0 = newValue } }
+        }
+        private let _messagePattern: NIOLockedValueBox<[MessagePattern]>
+
         private let prologue: [UInt8]
 
-        private var _msgIndex: Int = 0
         public var msgIndex: Int {
-            _msgIndex
+            _msgIndex.withLockedValue { $0 }
         }
+        private let _msgIndex: NIOLockedValueBox<Int>
 
         public let protocolName: String
 
         public init(config: Config) throws {
             /// Sets message_patterns to the message patterns from handshake_pattern.
-            self.messagePattern = config.handshakePattern.messagePattern
+            self._messagePattern = .init(config.handshakePattern.messagePattern)
             self.prologue = config.prologue
 
             /// Sets the initiator, s, e, rs, and re variables to the corresponding arguments.
             self.initiator = config.initiator
-            self.s = config.staticKeypair
-            self.e = config.ephemeralKeypair
-            self.rs = config.remoteStaticKeypair
-            self.re = config.remoteEphemeralKeypair
+            self._s = .init(config.staticKeypair)
+            self._e = .init(config.ephemeralKeypair)
+            self._rs = .init(config.remoteStaticKeypair)
+            self._re = .init(config.remoteEphemeralKeypair)
+
+            self._msgIndex = .init(0)
 
             /// Handle Pre Shared Key if one was provided
             var pskModifier = ""
             if let psk = config.presharedKey {
-                self.psk = psk.key
+                self._psk = .init(psk.key)
                 guard psk.key.count == 32 else {
                     throw Noise.Errors.invalidPSK
                 }
                 pskModifier = "psk\(psk.placement)"
 
                 if psk.placement == 0 {
-                    switch messagePattern[0] {
+                    switch _messagePattern.withLockedValue({ $0[0] }) {
                     case .inbound(let messages):
-                        messagePattern[0] = .inbound([.psk] + messages)
+                        _messagePattern.withLockedValue { $0[0] = .inbound([.psk] + messages) }
                     case .outbound(let messages):
-                        messagePattern[0] = .outbound([.psk] + messages)
+                        _messagePattern.withLockedValue { $0[0] = .outbound([.psk] + messages) }
                     }
                 } else {
-                    guard messagePattern.count > (psk.placement - 1) else {
+                    guard _messagePattern.withLockedValue({ $0.count }) > (psk.placement - 1) else {
                         throw Errors.custom("Invalid presharedKey placement")
                     }
-                    switch messagePattern[psk.placement - 1] {
+                    switch _messagePattern.withLockedValue({ $0[psk.placement - 1] }) {
                     case .inbound(let messages):
-                        messagePattern[psk.placement - 1] = .inbound(messages + [.psk])
+                        _messagePattern.withLockedValue { $0[psk.placement - 1] = .inbound(messages + [.psk]) }
                     case .outbound(let messages):
-                        messagePattern[psk.placement - 1] = .outbound(messages + [.psk])
+                        _messagePattern.withLockedValue { $0[psk.placement - 1] = .outbound(messages + [.psk]) }
                     }
                 }
+            } else {
+                self._psk = .init([])
             }
 
             self.protocolName =
@@ -795,7 +830,7 @@ public struct Noise {
             guard self.shouldWrite() else {
                 throw Noise.Errors.custom("noise: unexpected call to WriteMessage should be ReadMessage")
             }
-            guard _msgIndex < messagePattern.count else {
+            guard msgIndex < messagePattern.count else {
                 throw Noise.Errors.custom("noise: no handshake messages left")
             }
             guard payload.count < Noise.MaxMsgLen else {
@@ -803,7 +838,7 @@ public struct Noise {
             }
 
             // Get the next set of messages to process...
-            let pattern = messagePattern[_msgIndex].messages
+            let pattern = messagePattern[msgIndex].messages
 
             var messageBuffer: [UInt8] = []
 
@@ -892,14 +927,14 @@ public struct Noise {
             }
 
             // Increment our message index counter
-            _msgIndex += 1
+            _msgIndex.withLockedValue { $0 += 1 }
 
             // Appends EncryptAndHash(payload) to the buffer.
             try messageBuffer.append(contentsOf: symmetricState.encryptAndHash(plaintext: payload))
             //try messageBuffer.writeBytes( symmetricState.encryptAndHash(plaintext: payload) )
 
             // If there are no more message patterns returns two new CipherState objects by calling Split().
-            if _msgIndex >= messagePattern.count {
+            if msgIndex >= messagePattern.count {
                 let split = try symmetricState.split()
                 return (buffer: messageBuffer, c1: split.c1, c2: split.c2)
             }
@@ -917,7 +952,7 @@ public struct Noise {
             guard self.shouldRead() else {
                 throw Noise.Errors.custom("noise: unexpected call to ReadMessage should be WriteMessage")
             }
-            guard _msgIndex < messagePattern.count else {
+            guard msgIndex < messagePattern.count else {
                 throw Noise.Errors.custom("noise: no handshake messages left")
             }
 
@@ -926,7 +961,7 @@ public struct Noise {
             symmetricState.checkpoint()
 
             // Get the next set of messages to process...
-            let pattern = messagePattern[_msgIndex].messages
+            let pattern = messagePattern[msgIndex].messages
 
             var inboundMsg: [UInt8] = inboundMessage  //Array(inboundMessage.readableBytesView)
             var bytesRead: Int = 0
@@ -1052,10 +1087,10 @@ public struct Noise {
 
             }
 
-            _msgIndex += 1
+            _msgIndex.withLockedValue { $0 += 1 }
 
             // If there are no more message patterns returns two new CipherState objects by calling Split().
-            if _msgIndex >= messagePattern.count {
+            if msgIndex >= messagePattern.count {
                 let split = try symmetricState.split()
                 return (payload: decryptedPayload, c1: split.c1, c2: split.c2)
             }
@@ -1068,8 +1103,8 @@ public struct Noise {
         }
 
         public func shouldWrite() -> Bool {
-            guard messagePattern.count > _msgIndex else { return false }
-            let msg = messagePattern[_msgIndex]
+            guard messagePattern.count > msgIndex else { return false }
+            let msg = messagePattern[msgIndex]
             switch msg {
             case .inbound:
                 return self.initiator != true
@@ -1129,7 +1164,7 @@ public struct Noise {
 
         /// MessageIndex returns the current handshake message id
         public func messageIndex() -> Int {
-            _msgIndex
+            msgIndex
         }
 
     }
@@ -1137,7 +1172,7 @@ public struct Noise {
     /// A SymmetricState object contains a CipherState plus `ck` and `h` variables.
     /// - Note: It is so-named because it encapsulates all the "symmetric crypto" used by Noise.
     /// - Note: During the handshake phase each party has a single SymmetricState, which can be deleted once the handshake is finished.
-    internal class SymmetricState {
+    internal final class SymmetricState: Sendable {
         private let hashFunction: NoiseHashFunction
         private let cipher: NoiseCipherAlgorithm
 
@@ -1145,13 +1180,30 @@ public struct Noise {
         let cipherState: CipherState
 
         /// A chaining key of `HASHLEN` bytes.
-        var ck: SymmetricKey
+        var ck: SymmetricKey {
+            get { _ck.withLockedValue { $0 } }
+            set { _ck.withLockedValue { $0 = newValue } }
+        }
+        let _ck: NIOLockedValueBox<SymmetricKey>
 
         /// A hash output of `HASHLEN` bytes
-        var h: [UInt8]
+        var h: [UInt8] {
+            get { _h.withLockedValue { $0 } }
+            set { _h.withLockedValue { $0 = newValue } }
+        }
+        let _h: NIOLockedValueBox<[UInt8]>
 
-        private var previousCK: SymmetricKey
-        private var previousH: [UInt8]
+        private var previousCK: SymmetricKey {
+            get { _previousCK.withLockedValue { $0 } }
+            set { _previousCK.withLockedValue { $0 = newValue } }
+        }
+        private let _previousCK: NIOLockedValueBox<SymmetricKey>
+
+        private var previousH: [UInt8] {
+            get { _previousH.withLockedValue { $0 } }
+            set { _previousH.withLockedValue { $0 = newValue } }
+        }
+        private let _previousH: NIOLockedValueBox<[UInt8]>
 
         /// Takes an arbitrary-length protocol_name byte sequence (see Section 8).
         ///
@@ -1178,18 +1230,18 @@ public struct Noise {
 
             if proto.count <= HASHLEN {
                 while proto.count < HASHLEN { proto.append(0) }
-                h = [UInt8](proto)
+                _h = .init([UInt8](proto))
             } else {
-                h = hashFunction.hash(data: [UInt8](proto))
+                _h = .init(hashFunction.hash(data: [UInt8](proto)))
             }
 
             //if h.count > 32 { print("Using first 32 bytes of H") }
             //ck = SymmetricKey(data: h.prefix(32))
-            ck = SymmetricKey(data: h)
+            _ck = .init(SymmetricKey(data: _h.withLockedValue { $0 }))
 
             //Used for checkpoints and rollbacks
-            previousCK = ck
-            previousH = h
+            _previousCK = .init(_ck.withLockedValue { $0 })
+            _previousH = .init(_h.withLockedValue { $0 })
 
             cipherState = try CipherState(cipher: cipher, key: nil)
         }
@@ -1294,20 +1346,30 @@ public struct Noise {
 
     /// A CipherState object contains `k` and `n` variables, which it uses to encrypt and decrypt ciphertexts.
     /// - Note: During the handshake phase each party has a single CipherState, but during the transport phase each party has two CipherState objects: one for sending, and one for receiving.
-    public class CipherState {
+    public final class CipherState: Sendable {
         private let cipher: NoiseCipherAlgorithm
+
         /// A cipher key of 32 bytes (which may be empty). Empty is a special value which indicates k has not yet been initialized.
-        var k: SymmetricKey?
+        var k: SymmetricKey? {
+            get { _k.withLockedValue { $0 } }
+            set { _k.withLockedValue { $0 = newValue } }
+        }
+        let _k: NIOLockedValueBox<SymmetricKey?>
+
         /// An 8-byte (64-bit) unsigned integer nonce.
-        var n: UInt64
+        var n: UInt64 {
+            get { _n.withLockedValue { $0 } }
+            set { _n.withLockedValue { $0 = newValue } }
+        }
+        let _n: NIOLockedValueBox<UInt64>
 
         /// A CipherState
         /// - Note: The ++ post-increment operator applied to n means "use the current n value, then increment it".
         /// - Note: The maximum n value (264-1) is reserved for other use. If incrementing n results in 264-1, then any further EncryptWithAd() or DecryptWithAd() calls will signal an error to the caller.
         init(cipher: NoiseCipherAlgorithm, key: SymmetricKey? = nil) throws {
             self.cipher = cipher
-            k = key
-            n = 0
+            _k = .init(key)
+            _n = .init(0)
         }
 
         func initializeKey(key: [UInt8]) throws {
@@ -1429,3 +1491,9 @@ extension UInt64: UIntToBytesConvertable {
         toByteArr(endian: self.bigEndian, count: MemoryLayout<UInt64>.size)
     }
 }
+
+#if swift(<6.1)
+extension SymmetricKey: @retroactive @unchecked Sendable {}
+extension Curve25519.KeyAgreement.PublicKey: @retroactive @unchecked Sendable {}
+extension Curve25519.KeyAgreement.PrivateKey: @retroactive @unchecked Sendable {}
+#endif
