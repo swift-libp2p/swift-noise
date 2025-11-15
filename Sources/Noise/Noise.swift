@@ -638,7 +638,7 @@ public struct Noise {
         }
     }
 
-    public enum Errors: Error, Sendable {
+    public enum Errors: Error, Equatable, Sendable {
         case invalidPSK
         case remoteEphemeralKeyAlreadySet
         case remoteStaticKeyAlreadySet
