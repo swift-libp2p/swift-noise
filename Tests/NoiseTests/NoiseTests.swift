@@ -41,7 +41,7 @@ struct NoiseTests {
             Array(hex: "4142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f60")
     )
 
-    func testHMACChaining() throws {
+    @Test func testHMACChaining() throws {
         let alicePrivateKey = Curve25519.KeyAgreement.PrivateKey()
         let bobsPublicKeyData = Curve25519.KeyAgreement.PrivateKey().publicKey.rawRepresentation
         let protocolSalt = "SomePubliclySharedSalt".data(using: .utf8)!
@@ -101,7 +101,7 @@ struct NoiseTests {
     }
 
     /// These test params come from the [js-libp2p-noise test suite](https://github.com/NodeFactoryIo/js-libp2p-noise/blob/f9d56d8c87635ec03b6d7aa50e594b57923f41df/test/handshakes/xx.spec.ts)
-    func testHMACChaining2_HKDF() throws {
+    @Test func testHMACChaining2_HKDF() throws {
         let ckBytes = Array(
             hex:
                 "4e6f6973655f58585f32353531395f58436861436861506f6c795f53484132353600000000000000000000000000000000000000000000000000000000000000"

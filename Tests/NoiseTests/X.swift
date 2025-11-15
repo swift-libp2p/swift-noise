@@ -13,13 +13,14 @@
 //===----------------------------------------------------------------------===//
 
 import Crypto
-import XCTest
+import Testing
 
 @testable import Noise
 
-final class X_Handshake_Tests: XCTestCase {
+@Suite("X Handshake Tests")
+struct X_Handshake_Tests {
 
-    func test_Noise_X_25519_ChaChaPoly_SHA256() throws {
+    @Test func test_Noise_X_25519_ChaChaPoly_SHA256() throws {
         let vectors = """
             handshake=Noise_X_25519_ChaChaPoly_SHA256
             init_static=000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
@@ -180,10 +181,10 @@ final class X_Handshake_Tests: XCTestCase {
             msg_2_ciphertext=15fcd4e117342b9e651d6ab5048fd549fb38093e21fd369e1c6e630fbe9d24
             """
 
-        XCTAssertNoThrow(try NoiseTestSuite.doAllHandshakeVectors(vectors))
+        #expect(throws: Never.self) { try NoiseTestSuite.doAllHandshakeVectors(vectors) }
     }
 
-    func test_Noise_X_25519_ChaChaPoly_SHA512() throws {
+    @Test func test_Noise_X_25519_ChaChaPoly_SHA512() throws {
         let vectors = """
             handshake=Noise_X_25519_ChaChaPoly_SHA512
             init_static=000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
@@ -344,10 +345,10 @@ final class X_Handshake_Tests: XCTestCase {
             msg_2_ciphertext=0c7261852346c160ee7df5a37ac9f3bad96737b841a6d544b39f3052e0dddd
             """
 
-        XCTAssertNoThrow(try NoiseTestSuite.doAllHandshakeVectors(vectors))
+        #expect(throws: Never.self) { try NoiseTestSuite.doAllHandshakeVectors(vectors) }
     }
 
-    func test_Noise_X_25519_AESGCM_SHA256() throws {
+    @Test func test_Noise_X_25519_AESGCM_SHA256() throws {
         let vectors = """
             handshake=Noise_X_25519_AESGCM_SHA256
             init_static=000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
@@ -508,10 +509,10 @@ final class X_Handshake_Tests: XCTestCase {
             msg_2_ciphertext=451d0097fdecb5f4a7e61ef341bdb66a8bbdaf5b1a650d05e7b0f5e29f26ac
             """
 
-        XCTAssertNoThrow(try NoiseTestSuite.doAllHandshakeVectors(vectors))
+        #expect(throws: Never.self) { try NoiseTestSuite.doAllHandshakeVectors(vectors) }
     }
 
-    func test_Noise_X_25519_AESGCM_SHA512() throws {
+    @Test func test_Noise_X_25519_AESGCM_SHA512() throws {
         let vectors = """
             handshake=Noise_X_25519_AESGCM_SHA512
             init_static=000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
@@ -672,6 +673,6 @@ final class X_Handshake_Tests: XCTestCase {
             msg_2_ciphertext=0094ea104502c9337f6fdc742e949099f369f0f4c83a9327686b5fa3a39cb3
             """
 
-        XCTAssertNoThrow(try NoiseTestSuite.doAllHandshakeVectors(vectors))
+        #expect(throws: Never.self) { try NoiseTestSuite.doAllHandshakeVectors(vectors) }
     }
 }
