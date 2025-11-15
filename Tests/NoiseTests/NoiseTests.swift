@@ -12,7 +12,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import Crypto
+@preconcurrency import Crypto
 import XCTest
 
 @testable import Noise
