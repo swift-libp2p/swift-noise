@@ -12,14 +12,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-import Crypto
-import XCTest
+import Testing
 
 @testable import Noise
 
-final class NN_Handshake_Tests: XCTestCase {
+@Suite("NN Handshake Tests")
+struct NN_Handshake_Tests {
 
-    func test_Noise_NN_25519_ChaChaPoly_SHA256() throws {
+    @Test func test_Noise_NN_25519_ChaChaPoly_SHA256() throws {
         let vectors = """
             handshake=Noise_NN_25519_ChaChaPoly_SHA256
             gen_init_ephemeral=202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f
@@ -234,10 +234,10 @@ final class NN_Handshake_Tests: XCTestCase {
             msg_3_ciphertext=17aecb7454199636aa7e8a44b7e51b5dc6729b39faddd2739bc66d8cbf07be
             """
 
-        XCTAssertNoThrow(try NoiseTestSuite.doAllHandshakeVectors(vectors))
+        #expect(throws: Never.self) { try NoiseTestSuite.doAllHandshakeVectors(vectors) }
     }
 
-    func test_Noise_NN_25519_ChaChaPoly_SHA512() throws {
+    @Test func test_Noise_NN_25519_ChaChaPoly_SHA512() throws {
         let vectors = """
             handshake=Noise_NN_25519_ChaChaPoly_SHA512
             gen_init_ephemeral=202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f
@@ -452,10 +452,10 @@ final class NN_Handshake_Tests: XCTestCase {
             msg_3_ciphertext=79c9684daee2cdbf5117ccd166e2da4ef6bfd9c7babc9ab75e5d3665518cbd
             """
 
-        XCTAssertNoThrow(try NoiseTestSuite.doAllHandshakeVectors(vectors))
+        #expect(throws: Never.self) { try NoiseTestSuite.doAllHandshakeVectors(vectors) }
     }
 
-    func test_Noise_NN_25519_AESGCM_SHA256() throws {
+    @Test func test_Noise_NN_25519_AESGCM_SHA256() throws {
         let vectors = """
             handshake=Noise_NN_25519_AESGCM_SHA256
             gen_init_ephemeral=202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f
@@ -670,10 +670,10 @@ final class NN_Handshake_Tests: XCTestCase {
             msg_3_ciphertext=4bdd4800b3abd620ce9f4c519428acf7912af8b6507aa3befecce2444d2614
             """
 
-        XCTAssertNoThrow(try NoiseTestSuite.doAllHandshakeVectors(vectors))
+        #expect(throws: Never.self) { try NoiseTestSuite.doAllHandshakeVectors(vectors) }
     }
 
-    func test_Noise_NN_25519_AESGCM_SHA512() throws {
+    @Test func test_Noise_NN_25519_AESGCM_SHA512() throws {
         let vectors = """
             handshake=Noise_NN_25519_AESGCM_SHA512
             gen_init_ephemeral=202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f
@@ -888,6 +888,6 @@ final class NN_Handshake_Tests: XCTestCase {
             msg_3_ciphertext=979f3f045a786f9677281e84a4a5df198ec6a826f5969acc228ab6d1cda049
             """
 
-        XCTAssertNoThrow(try NoiseTestSuite.doAllHandshakeVectors(vectors))
+        #expect(throws: Never.self) { try NoiseTestSuite.doAllHandshakeVectors(vectors) }
     }
 }

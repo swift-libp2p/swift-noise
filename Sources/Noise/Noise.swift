@@ -14,7 +14,8 @@
 //
 //  A Noise Protocol handshake implementation
 
-import Crypto
+// TODO: remove the @preconcurrency tag once we drop support for swift 6.0
+@preconcurrency import Crypto
 
 internal protocol Handshake {
     var isInitiator: Bool { get }
@@ -28,7 +29,7 @@ public struct Noise {
     static let MaxMsgLen = 65_535
 
     /// Noise defined Message types
-    public enum Message {
+    public enum Message: Sendable {
         case s
         case e
         case ee
@@ -38,7 +39,7 @@ public struct Noise {
         case psk
     }
 
-    public enum MessagePattern {
+    public enum MessagePattern: Sendable {
         case inbound([Message])
         case outbound([Message])
 
@@ -52,7 +53,7 @@ public struct Noise {
         }
     }
 
-    public enum FundamentalHandshake: Handshake {
+    public enum FundamentalHandshake: Handshake, Sendable {
 
         // Handshake NN
         case NN_Initiator
@@ -192,7 +193,7 @@ public struct Noise {
 
     /// A set of pre-configured / defined Noise Handshake message patterns
     public struct Handshakes {
-        public struct Handshake {
+        public struct Handshake: Sendable {
             let name: String
             let messagePattern: [MessagePattern]
             let initiatorPreMessages: [Message]
@@ -356,7 +357,7 @@ public struct Noise {
 
     }
 
-    public enum NoiseHashFunction {
+    public enum NoiseHashFunction: Sendable {
         case sha256
         //case sha384
         case sha512
@@ -466,7 +467,7 @@ public struct Noise {
         }
     }
 
-    public enum NoiseCipherAlgorithm {
+    public enum NoiseCipherAlgorithm: Sendable {
         case ChaChaPoly1305
         case AESGCM
 
@@ -558,7 +559,7 @@ public struct Noise {
         }
     }
 
-    public enum NoiseKeypairCurve {
+    public enum NoiseKeypairCurve: Sendable {
         case ed25519
 
         internal var protocolName: String {
@@ -569,7 +570,7 @@ public struct Noise {
         }
     }
 
-    public struct CipherSuite {
+    public struct CipherSuite: Sendable {
         let keyCurve: NoiseKeypairCurve
         let cipher: NoiseCipherAlgorithm
         let hashFunction: NoiseHashFunction
@@ -585,7 +586,7 @@ public struct Noise {
         }
     }
 
-    public struct Config {
+    public struct Config: Sendable {
         let cipherSuite: CipherSuite
         let handshakePattern: Handshakes.Handshake
         let initiator: Bool
@@ -637,7 +638,7 @@ public struct Noise {
         }
     }
 
-    public enum Errors: Error {
+    public enum Errors: Error, Equatable, Sendable {
         case invalidPSK
         case remoteEphemeralKeyAlreadySet
         case remoteStaticKeyAlreadySet
@@ -651,7 +652,8 @@ public struct Noise {
 
     /// A HandshakeState object contains a `SymmetricState` plus DH variables (`s`, `e`, `rs`, `re`) and a variable representing the handshake pattern.
     /// - Note: During the handshake phase each party has a single HandshakeState, which can be deleted once the handshake is finished.
-    public class HandshakeState {
+    /// - WARNING: HandshakeState is not thread safe, it's designed to be used within a single thread such as a NIO Channel
+    public final class HandshakeState: @unchecked Sendable {
         private let symmetricState: SymmetricState
 
         private var s: Curve25519.KeyAgreement.PrivateKey?  //Our Local Libp2p Keys
@@ -1137,7 +1139,8 @@ public struct Noise {
     /// A SymmetricState object contains a CipherState plus `ck` and `h` variables.
     /// - Note: It is so-named because it encapsulates all the "symmetric crypto" used by Noise.
     /// - Note: During the handshake phase each party has a single SymmetricState, which can be deleted once the handshake is finished.
-    internal class SymmetricState {
+    /// - WARNING: HandshakeState is not thread safe, it's designed to be used within a single thread such as a NIO Channel
+    internal final class SymmetricState: @unchecked Sendable {
         private let hashFunction: NoiseHashFunction
         private let cipher: NoiseCipherAlgorithm
 
@@ -1294,7 +1297,8 @@ public struct Noise {
 
     /// A CipherState object contains `k` and `n` variables, which it uses to encrypt and decrypt ciphertexts.
     /// - Note: During the handshake phase each party has a single CipherState, but during the transport phase each party has two CipherState objects: one for sending, and one for receiving.
-    public class CipherState {
+    /// - WARNING: HandshakeState is not thread safe, it's designed to be used within a single thread such as a NIO Channel
+    public final class CipherState: @unchecked Sendable {
         private let cipher: NoiseCipherAlgorithm
         /// A cipher key of 32 bytes (which may be empty). Empty is a special value which indicates k has not yet been initialized.
         var k: SymmetricKey?
